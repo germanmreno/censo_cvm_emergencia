@@ -20,6 +20,8 @@ module.exports = {
       env_production: {
         NODE_ENV: 'production',
         PORT: 3012,
+        HTTPS_CERT: '/var/www/html/censo_cvm_emergencia/certs/fullchain.pem',
+        HTTPS_KEY: '/var/www/html/censo_cvm_emergencia/certs/privkey.pem',
       },
       env_file: './backend/.env',
       out_file: '~/.pm2/logs/censo-api-out.log',
@@ -47,6 +49,8 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: 3013,
         HOST: '0.0.0.0',
+        HTTPS_CERT: '/var/www/html/censo_cvm_emergencia/certs/fullchain.pem',
+        HTTPS_KEY: '/var/www/html/censo_cvm_emergencia/certs/privkey.pem',
       },
       out_file: '~/.pm2/logs/censo-web-out.log',
       error_file: '~/.pm2/logs/censo-web-error.log',

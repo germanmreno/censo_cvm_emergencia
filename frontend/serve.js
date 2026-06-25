@@ -1,5 +1,7 @@
-import { createServer } from 'node:http';
+import { createServer as createHttpServer } from 'node:http';
+import { createServer as createHttpsServer } from 'node:https';
 import { readFile, stat } from 'node:fs/promises';
+import { readFileSync, existsSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +9,10 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const DIST_DIR = resolve(__dirname, 'dist');
 const PORT = Number(process.env.PORT) || 3013;
 const HOST = process.env.HOST || '0.0.0.0';
+
+const certPath = process.env.HTTPS_CERT;
+const keyPath = process.env.HTTPS_KEY;
+const useHttps = certPath && keyPath && existsSync(certPath) && existsSync(keyPath);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -48,7 +54,7 @@ async function resolveFile(pathname) {
   return filePath;
 }
 
-const server = createServer(async (req, res) => {
+const requestHandler = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.writeHead(405).end('Method Not Allowed');
     return;
@@ -75,10 +81,22 @@ const server = createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Not Found');
   }
-});
+};
+
+let server;
+if (useHttps) {
+  server = createHttpsServer(
+    { cert: readFileSync(certPath), key: readFileSync(keyPath) },
+    requestHandler,
+  );
+  console.log(`[censo-web] HTTPS habilitado con ${certPath}`);
+} else {
+  server = createHttpServer(requestHandler);
+}
 
 server.listen(PORT, HOST, () => {
-  console.log(`[censo-web] Sirviendo ${DIST_DIR} en http://${HOST}:${PORT}`);
+  const proto = useHttps ? 'https' : 'http';
+  console.log(`[censo-web] Sirviendo ${DIST_DIR} en ${proto}://${HOST}:${PORT}`);
 });
 
 const shutdown = (signal) => {

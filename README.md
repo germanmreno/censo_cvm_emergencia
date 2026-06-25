@@ -99,6 +99,77 @@ npm run dev           # http://localhost:3013
 - **Auditoría** completa en `AuditLog` para login, cambios de estatus y exportaciones.
 - **Transiciones de estatus controladas**: `RECEIVED → IN_PROCESS → ATTENDED → CLOSED`.
 - **Branding CVM** con colores corporativos y banner de emergencia.
+- **HTTPS nativo** integrado con `certbot` (no requiere Nginx/Apache).
+
+## HTTPS con Let's Encrypt (sin Nginx)
+
+El backend y el frontend pueden servir HTTPS directamente. Solo necesitas certificados válidos de Let's Encrypt.
+
+### 1. Obtener el certificado (una vez)
+
+```bash
+# Uso: ./setup-https.sh <dominio> <email> [puerto-http] [dominios-extra]
+sudo ./scripts/setup-https.sh correspondencia.cvm.com.ve admin@cvm.com.ve
+```
+
+El script:
+1. Instala `certbot` si no está (apt/dnf/yum).
+2. Detiene PM2 temporalmente para liberar el puerto 80.
+3. Ejecuta `certbot certonly --standalone` para obtener el cert.
+4. Copia `fullchain.pem` y `privkey.pem` a `/var/www/html/censo_cvm_emergencia/certs/` (con permisos correctos).
+5. Reinicia PM2.
+
+### 2. Activar HTTPS en PM2
+
+Las variables `HTTPS_CERT` y `HTTPS_KEY` ya están pre-configuradas en `ecosystem.config.js` (sección `env_production`):
+
+```js
+HTTPS_CERT: '/var/www/html/censo_cvm_emergencia/certs/fullchain.pem',
+HTTPS_KEY:  '/var/www/html/censo_cvm_emergencia/certs/privkey.pem',
+```
+
+Solo recargar:
+
+```bash
+pm2 reload ecosystem.config.js --env production
+```
+
+Verificar:
+```bash
+curl -i https://correspondencia.cvm.com.ve:3012/health
+curl -I https://correspondencia.cvm.com.ve:3013/
+```
+
+### 3. Renovación automática (cron)
+
+Los certificados de Let's Encrypt expiran cada 90 días. Programa la renovación:
+
+```bash
+sudo crontab -e
+# Añadir esta línea (todos los días a las 3am):
+0 3 * * * APP_DIR=/var/www/html/censo_cvm_emergencia DOMAIN=correspondencia.cvm.com.ve /var/www/html/censo_cvm_emergencia/scripts/renew-certs.sh >> /var/log/certbot-renew.log 2>&1
+```
+
+`renew-certs.sh` se encarga de:
+- Renovar con `certbot renew` (no-op si no toca).
+- Redistribuir a la app.
+- `pm2 reload` sin downtime para que tome el cert nuevo.
+
+### 4. CORS y HTTPS
+
+Tras activar HTTPS, actualiza `CORS_ORIGIN` en `backend/.env` para incluir la versión HTTPS:
+
+```bash
+CORS_ORIGIN=http://localhost:3013,https://correspondencia.cvm.com.ve:3013
+```
+
+Y `VITE_API_URL` en `frontend/.env.production`:
+
+```bash
+VITE_API_URL=https://correspondencia.cvm.com.ve:3012
+```
+
+Después `npm run build:frontend && pm2 reload ecosystem.config.js --env production`.
 
 ## Backups
 

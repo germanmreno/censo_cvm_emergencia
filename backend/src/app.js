@@ -20,7 +20,12 @@ export function buildApp() {
         if (!origin || allowed.includes('*') || allowed.includes(origin)) {
           return callback(null, true);
         }
-        return callback(new Error(`CORS: origen no permitido: ${origin}`));
+        logger.warn({ origin, allowed }, 'CORS: origen no permitido');
+        return callback(
+          new Error(
+            `CORS: origen no permitido: ${origin}. Permitidos: [${allowed.join(', ')}]`,
+          ),
+        );
       },
       credentials: true,
     }),
