@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 5173",
+    "serve": "node serve.js",
+    "start": "node serve.js",
     "lint": "eslint . --ext .js,.jsx"
   },
   "dependencies": {

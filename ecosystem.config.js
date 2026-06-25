@@ -1,0 +1,71 @@
+module.exports = {
+  apps: [
+    {
+      name: 'censo-api',
+      cwd: './backend',
+      script: 'src/server.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      max_restarts: 10,
+      max_memory_restart: '512M',
+      kill_timeout: 5000,
+      wait_ready: false,
+      listen_timeout: 10000,
+      node_args: ['--enable-source-maps'],
+      env: {
+        NODE_ENV: 'development',
+        PORT: 4000,
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 4000,
+      },
+      env_file: './backend/.env',
+      out_file: '~/.pm2/logs/censo-api-out.log',
+      error_file: '~/.pm2/logs/censo-api-error.log',
+      merge_logs: true,
+      time: true,
+    },
+    {
+      name: 'censo-web',
+      cwd: './frontend',
+      script: 'serve.js',
+      instances: 1,
+      exec_mode: 'fork',
+      autorestart: true,
+      max_restarts: 10,
+      max_memory_restart: '256M',
+      kill_timeout: 5000,
+      node_args: ['--enable-source-maps'],
+      env: {
+        NODE_ENV: 'development',
+        PORT: 5173,
+        HOST: '0.0.0.0',
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PORT: 5173,
+        HOST: '0.0.0.0',
+      },
+      out_file: '~/.pm2/logs/censo-web-out.log',
+      error_file: '~/.pm2/logs/censo-web-error.log',
+      merge_logs: true,
+      time: true,
+    },
+  ],
+
+  deploy: {
+    production: {
+      user: 'deploy',
+      host: ['tu-servidor.example.com'],
+      ref: 'origin/main',
+      repo: 'git@github.com:tu-org/censo-emergencia-cvm.git',
+      path: '/opt/censo',
+      'pre-deploy': 'git fetch --all',
+      'post-deploy':
+        'cd /opt/censo && npm ci --omit=dev --workspaces=false && (cd backend && npx prisma migrate deploy) && (cd frontend && npm run build) && pm2 reload ecosystem.config.js --env production',
+      'pre-setup': 'apt-get install -y nodejs npm postgresql || true',
+    },
+  },
+};

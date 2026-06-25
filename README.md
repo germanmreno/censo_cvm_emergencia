@@ -112,17 +112,133 @@ npm run dev           # http://localhost:5173
 
 Los scripts generan dumps `pg_dump` con timestamp y rotación de 7 días en `backups/`.
 
-## Producción
+## Producción con PM2
+
+PM2 mantiene ambos servicios vivos, con auto-restart, logs centralizados y arranque en boot.
+
+### Setup en el servidor (una vez)
 
 ```bash
-# Backend
-cd backend
-NODE_ENV=production npm start
+# 1. Instalar Node 20+ y clonar el repo
+git clone git@github.com:tu-org/censo-emergencia-cvm.git /opt/censo
+cd /opt/censo
 
-# Frontend
-cd frontend
-npm run build
-# Servir dist/ con Nginx, Caddy o `npx serve dist`
+# 2. Instalar dependencias (sin dev en backend)
+cd backend && npm ci --omit=dev && cd ..
+cd frontend && npm ci && cd ..
+npm ci   # instala pm2 en la raíz
+
+# 3. Configurar variables de entorno
+cp backend/.env.example backend/.env
+# editar backend/.env: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGIN
+# editar frontend/.env (opcional, solo si el API no está en localhost:4000)
+
+# 4. Migrar DB
+npm run migrate:prod
+
+# 5. Build del frontend
+npm run build:frontend
+
+# 6. Crear admin inicial (solo la primera vez)
+npm run seed
 ```
 
-En producción, configurar `CORS_ORIGIN` con el dominio final y montar el backend tras un reverse proxy (Nginx) con HTTPS.
+### Arrancar ambos servicios
+
+```bash
+# Desde la raíz del proyecto
+npm run pm2:start         # equivalente a: pm2 start ecosystem.config.js
+
+# Ver estado
+pm2 status
+# ┌────┬───────────────┬─────────┬──────┬────────┬──────────┐
+# │ id │ name          │ mode    │ ↺    │ status │ memory   │
+# ├────┼───────────────┼─────────┼──────┼────────┼──────────┤
+# │ 0  │ censo-api     │ fork    │ 0    │ online │ 45.2 MB  │
+# │ 1  │ censo-web     │ fork    │ 0    │ online │ 22.8 MB  │
+# └────┴───────────────┴─────────┴──────┴────────┴──────────┘
+
+# Logs en vivo
+npm run pm2:logs          # ambos
+pm2 logs censo-api        # solo backend
+pm2 logs censo-web        # solo frontend
+```
+
+### Persistir tras reinicio del servidor
+
+```bash
+# Genera el comando de init según el sistema de init
+npm run pm2:startup       # muestra el comando a ejecutar con sudo
+
+# Guardar la lista de procesos actuales
+npm run pm2:save          # congela el estado actual
+
+# Tras cualquier reinicio, PM2 levantará censo-api y censo-web automáticamente
+```
+
+### Despliegues siguientes (flujo de actualización)
+
+```bash
+# 1. En tu máquina local
+git pull
+# ... cambios ...
+git add .
+git commit -m "fix: ..."
+git push
+
+# 2. En el servidor
+cd /opt/censo
+git pull
+cd backend && npm ci --omit=dev && npx prisma migrate deploy && cd ..
+cd frontend && npm ci && npm run build && cd ..
+pm2 reload ecosystem.config.js   # cero-downtime reload
+```
+
+### Comandos PM2 útiles
+
+| Acción | Comando |
+|---|---|
+| Iniciar | `npm run pm2:start` |
+| Estado | `npm run pm2:status` |
+| Logs en vivo | `npm run pm2:logs` |
+| Reiniciar ambos | `npm run pm2:restart` |
+| Reload sin downtime | `npm run pm2:reload` |
+| Detener | `npm run pm2:stop` |
+| Eliminar del supervisor | `npm run pm2:delete` |
+| Monitor web (puerto 9615) | `pm2 plus` o `pm2 monit` |
+| Logs centralizados | `~/.pm2/logs/` |
+
+### Nginx delante de PM2 (recomendado)
+
+PM2 escucha en localhost; Nginx en :80/:443 hace de reverse proxy y sirve HTTPS:
+
+```nginx
+# /etc/nginx/sites-available/censo.conf
+server {
+  listen 80;
+  server_name censo.cvm.gob.ve;
+
+  # Frontend estático servido por PM2
+  location / {
+    proxy_pass http://127.0.0.1:5173;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # API
+  location /api/ {
+    proxy_pass http://127.0.0.1:4000/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 8M;
+  }
+}
+```
+
+Activar HTTPS con Let's Encrypt: `sudo certbot --nginx -d censo.cvm.gob.ve`.
