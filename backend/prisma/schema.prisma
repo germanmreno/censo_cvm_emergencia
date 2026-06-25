@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContingencyStatus {
+  RECEIVED
+  IN_PROCESS
+  ATTENDED
+  CLOSED
+}
+
+enum ContingencySituation {
+  SAFE
+  INJURED
+  DISPLACED
+  MISSING_FAMILY
+  DECEASED
+  OTHER
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  passwordHash    String
+  fullName        String
+  role            UserRole @default(OPERATOR)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  reports         ContingencyCensus[] @relation("reportedBy")
+  statusChanges   ContingencyCensus[] @relation("statusChangedBy")
+}
+
+model ContingencyCensus {
+  id                String                @id @default(cuid())
+  fileNumber        String                @unique
+  firstName         String
+  lastName          String
+  cedula            String
+  contactPhone      String
+  management        String
+  currentLocation   String
+  currentSituation  ContingencySituation
+  situationOther    String?
+  needsSupport      Boolean               @default(false)
+  needsMedicine     Boolean               @default(false)
+  medicineDetail    String?
+  needsFood         Boolean               @default(false)
+  needsHousing      Boolean               @default(false)
+  affectedPeople    Int                   @default(0)
+  observations      String?
+  status            ContingencyStatus     @default(RECEIVED)
+
+  reportedById       String?
+  reportedBy         User?   @relation("reportedBy", fields: [reportedById], references: [id])
+  statusChangedById  String?
+  statusChangedBy    User?   @relation("statusChangedBy", fields: [statusChangedById], references: [id])
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([cedula])
+  @@index([management])
+  @@index([needsMedicine, needsFood, needsHousing])
+  @@index([currentSituation])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  actorId   String?
+  actorEmail String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

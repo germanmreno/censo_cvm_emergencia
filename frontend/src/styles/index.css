@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { font-family: 'Georama', system-ui, sans-serif; }
+  body { -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { font-family: 'Georama', system-ui, sans-serif; letter-spacing: -0.01em; }
+}
+
+@layer components {
+  .field-label {
+    @apply block text-sm font-semibold text-cvm-secondary mb-1.5;
+  }
+  .field-hint {
+    @apply text-xs text-slate-500 mt-1;
+  }
+  .field-error {
+    @apply text-xs text-cvm-emergency mt-1 font-medium;
+  }
+}
