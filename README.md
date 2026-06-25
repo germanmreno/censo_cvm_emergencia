@@ -116,6 +116,8 @@ Los scripts generan dumps `pg_dump` con timestamp y rotación de 7 días en `bac
 
 PM2 mantiene ambos servicios vivos, con auto-restart, logs centralizados y arranque en boot.
 
+> ⚠️ **Importante**: `censo-web` (3013) **solo sirve archivos estáticos** (GET/HEAD). El API vive en `censo-api` (3012). En producción **debes** poner Nginx o un proxy delante para que `/api/*` llegue al backend. La forma más simple es usar Nginx — ver [Nginx delante de PM2](#nginx-delante-de-pm2-recomendado).
+
 ### Setup en el servidor (una vez)
 
 ```bash
@@ -210,7 +212,7 @@ pm2 reload ecosystem.config.js   # cero-downtime reload
 
 ### Nginx delante de PM2 (recomendado)
 
-PM2 escucha en localhost; Nginx en :80/:443 hace de reverse proxy y sirve HTTPS:
+PM2 escucha en localhost; Nginx en :80/:443 hace de reverse proxy y sirve HTTPS. **Esto resuelve el 405 que aparece si el navegador hace POST a `:3013`** — Nginx enruta `/api/*` al backend (3012) y el resto al frontend estático (3013).
 
 ```nginx
 # /etc/nginx/sites-available/censo.conf

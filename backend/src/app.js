@@ -15,7 +15,13 @@ export function buildApp() {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.CORS_ORIGIN.split(',').map((s) => s.trim()),
+      origin: (origin, callback) => {
+        const allowed = env.CORS_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+        if (!origin || allowed.includes('*') || allowed.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`CORS: origen no permitido: ${origin}`));
+      },
       credentials: true,
     }),
   );
