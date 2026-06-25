@@ -36,7 +36,7 @@ npm run seed
 
 # 6. Dev
 npm run dev
-# API en http://localhost:4000
+# API en http://localhost:3012
 ```
 
 ## Endpoints principales

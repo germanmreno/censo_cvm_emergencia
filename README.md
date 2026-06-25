@@ -56,7 +56,7 @@ cp .env.example .env
 # Editar .env: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET (mínimo 16 chars)
 npx prisma migrate dev --name init_contingency
 npm run seed         # crea admin: admin@cvm.com.ve / CVM-Emerg-2026!
-npm run dev          # API en http://localhost:4000
+npm run dev          # API en http://localhost:3012
 ```
 
 ### 3. Frontend
@@ -64,14 +64,14 @@ npm run dev          # API en http://localhost:4000
 ```bash
 cd frontend
 npm install
-cp .env.example .env  # opcional; por defecto usa VITE_API_URL=http://localhost:4000
-npm run dev           # http://localhost:5173
+cp .env.example .env  # opcional; por defecto usa VITE_API_URL=http://localhost:3012
+npm run dev           # http://localhost:3013
 ```
 
 ## Acceso
 
-- **Público**: http://localhost:5173/reporte
-- **Admin**: http://localhost:5173/admin/login
+- **Público**: http://localhost:3013/reporte
+- **Admin**: http://localhost:3013/admin/login
   - Email: `admin@cvm.com.ve`
   - Password: `CVM-Emerg-2026!`
   - **Rotar la contraseña en el primer ingreso.**
@@ -131,7 +131,7 @@ npm ci   # instala pm2 en la raíz
 # 3. Configurar variables de entorno
 cp backend/.env.example backend/.env
 # editar backend/.env: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, CORS_ORIGIN
-# editar frontend/.env (opcional, solo si el API no está en localhost:4000)
+# editar frontend/.env (opcional, solo si el API no está en localhost:3012)
 
 # 4. Migrar DB
 npm run migrate:prod
@@ -220,7 +220,7 @@ server {
 
   # Frontend estático servido por PM2
   location / {
-    proxy_pass http://127.0.0.1:5173;
+    proxy_pass http://127.0.0.1:3013;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -230,7 +230,7 @@ server {
 
   # API
   location /api/ {
-    proxy_pass http://127.0.0.1:4000/api/;
+    proxy_pass http://127.0.0.1:3012/api/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;

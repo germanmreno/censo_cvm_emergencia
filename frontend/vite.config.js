@@ -4,7 +4,7 @@ import path from 'node:path';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.VITE_API_URL || 'http://localhost:4000';
+  const apiTarget = env.VITE_API_URL || 'http://localhost:3012';
 
   return {
     plugins: [react()],
@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      port: 5173,
+      port: 3013,
       proxy: {
         '/api': { target: apiTarget, changeOrigin: true },
       },

@@ -15,11 +15,11 @@ module.exports = {
       node_args: ['--enable-source-maps'],
       env: {
         NODE_ENV: 'development',
-        PORT: 4000,
+        PORT: 3012,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 4000,
+        PORT: 3012,
       },
       env_file: './backend/.env',
       out_file: '~/.pm2/logs/censo-api-out.log',
@@ -40,12 +40,12 @@ module.exports = {
       node_args: ['--enable-source-maps'],
       env: {
         NODE_ENV: 'development',
-        PORT: 5173,
+        PORT: 3013,
         HOST: '0.0.0.0',
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 5173,
+        PORT: 3013,
         HOST: '0.0.0.0',
       },
       out_file: '~/.pm2/logs/censo-web-out.log',

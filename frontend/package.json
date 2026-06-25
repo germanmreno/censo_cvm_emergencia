@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5173",
+    "preview": "vite preview --port 3013",
     "serve": "node serve.js",
     "start": "node serve.js",
     "lint": "eslint . --ext .js,.jsx"
